@@ -80,6 +80,21 @@
       (snake-positions l) (assoc "left" 0)
       (snake-positions r) (assoc "right" 0))))
 
+(defn find-food
+  [moves
+   {{:strs [id ruleset map source timeout] :as game} "game"
+    {:strs [height width food hazards snakes] :as board} "board"
+    {:strs [shout body health id name length head customizations latency squad] :as you} "you"
+    :strs [turn] :as req}]
+  (reduce (fn [acc fd]
+            (cond-> acc
+              (< (get head "y") (get fd "y")) (update "up" + 10)
+              (> (get head "y") (get fd "y")) (update "down" + 10)
+              (> (get head "x") (get fd "x")) (update "left" + 10)
+              (< (get head "x") (get fd "x")) (update "right" + 10)))
+          moves
+          food))
+
 (def base-moves
   {"up" 100
    "down" 100
@@ -92,13 +107,15 @@
     {:strs [shout body health id name length head customizations latency squad] :as you} "you"
     :strs [turn] :as req}]
   (let [results (apply-heuristics base-moves req [avoid-walls
-                                                  avoid-snakes])
+                                                  avoid-snakes
+                                                  find-food])
         valid-options (remove (comp zero? second) results)]
     (prn results)
     (when (seq valid-options)
       (response {"move" (->> valid-options
-                             keys
-                             rand-nth)}))))
+                             (sort-by second)
+                             reverse
+                             ffirst)}))))
 
 (defroutes app-routes
   (GET "/" req (get-handler (:body req)))
