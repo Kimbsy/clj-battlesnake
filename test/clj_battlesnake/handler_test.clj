@@ -10,3 +10,8 @@
   (let [req (json/parse-string (slurp (io/resource "simple-request.json")) keyword)
         resp (move-handler req)]
     (is (s/valid? ::common/response resp))))
+
+;; ..+.
+;; .+++
+;; xx+.
+;; .x..

@@ -36,7 +36,7 @@
 (defn move-handler
   [req]
   (let [results (h/apply-heuristics req base-moves)
-        valid-options (remove (comp zero? second) results)]
+        valid-options (filter (comp pos? second) results)]
     (when (seq valid-options)
       (response {"move" (->> valid-options
                              (group-by second)

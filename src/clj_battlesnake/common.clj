@@ -32,8 +32,12 @@
      (dec (get-in req [:board :width]))))
 
 (defn cardinal-adjacent-positions
+  [[x y]]
+  {:up [x (inc y)]
+   :down [x (dec y)]
+   :left [(dec x) y]
+   :right [(inc x) y]})
+
+(defn head-adjacent-positions
   [{{{:keys [x y]} :head} :you}]
-  {:u [x (inc y)]
-   :d [x (dec y)]
-   :l [(dec x) y]
-   :r [(inc x) y]})
+  (cardinal-adjacent-positions [x y]))

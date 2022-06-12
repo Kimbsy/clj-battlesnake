@@ -1,7 +1,10 @@
 (ns clj-battlesnake.heuristics
-  (:require [clj-battlesnake.common :as common]))
+  (:require [clj-battlesnake.common :as common]
+            [clojure.set :as s]))
 
 (defn avoid-walls
+  "If we're using the `wrapped` ruleset we shouldn't care about
+  walls."
   [moves
    {{:keys [ruleset]} :game :as req}]
   (if-not (= "wrapped" (:name ruleset))
@@ -18,15 +21,15 @@
     {:keys [head]} :you
     :as req}]
   (let [{:keys [x y]} head
-        {:keys [u d l r]} (common/cardinal-adjacent-positions req)
+        {:keys [up down left right]} (common/head-adjacent-positions req)
         hazard-positions (->> hazards
                               (map common/vectorize)
                               set)]
     (cond-> moves
-      (hazard-positions u) (assoc :up 0)
-      (hazard-positions d) (assoc :down 0)
-      (hazard-positions l) (assoc :left 0)
-      (hazard-positions r) (assoc :right 0))))
+      (hazard-positions up) (assoc :up 0)
+      (hazard-positions down) (assoc :down 0)
+      (hazard-positions left) (assoc :left 0)
+      (hazard-positions right) (assoc :right 0))))
 
 (defn avoid-snakes
   [moves
@@ -34,16 +37,69 @@
     {:keys [head]} :you
     :as req}]
   (let [{:keys [x y]} head
-        {:keys [u d l r]} (common/cardinal-adjacent-positions req)
+        {:keys [up down left right]} (common/head-adjacent-positions req)
         snake-positions (->> snakes
                              (mapcat :body)
                              (map common/vectorize)
                              set)]
     (cond-> moves
-      (snake-positions u) (assoc :up 0)
-      (snake-positions d) (assoc :down 0)
-      (snake-positions l) (assoc :left 0)
-      (snake-positions r) (assoc :right 0))))
+      (snake-positions up) (assoc :up 0)
+      (snake-positions down) (assoc :down 0)
+      (snake-positions left) (assoc :left 0)
+      (snake-positions right) (assoc :right 0))))
+
+(defn allowed?
+  "Check that a position is not a snake, nor a hazard, nor out of
+  bounds."
+  [[x y]
+   {{:keys [height width hazards snakes]} :board}]
+  (and (<= 0 x)
+       (<= 0 y)
+       (< x width)
+       (< y height)
+       (let [hazard-positions (->> hazards
+                                   (map common/vectorize)
+                                   set)
+             snake-positions (->> snakes
+                                  (mapcat :body)
+                                  (map common/vectorize)
+                                  set)
+             disallowed-positions (s/union hazard-positions snake-positions)]
+         (not (disallowed-positions [x y])))))
+
+(defn flood-fill
+  [req spaces pos]
+  (when-not (spaces pos)
+    (when (allowed? pos req)
+      (apply conj spaces pos (mapcat #(flood-fill req (conj spaces pos) %)
+                                     (vals (common/cardinal-adjacent-positions pos)))))))
+
+(defn count-space
+  [[direction _ :as dir-kv]
+   ;; This _should_ take into account `wrapped` rulesets
+   {{:keys [head] :as you} :you
+    :as req}]
+  ;; do a flood-fill for a direction from the head, only consider
+  ;; cardinal adjacency each time
+  (let [adjacent-positions (common/head-adjacent-positions req)
+        starting-pos (direction adjacent-positions)]
+    [dir-kv (count (flood-fill req #{} starting-pos))]))
+
+(defn prefer-space
+  "Try not to get trapped in dead ends by preferring larger contiguous
+  areas."
+  [moves
+   req]
+  (let [valid-options (filter (comp pos? second) moves)
+        head-pos (common/head-adjacent-positions req)]
+    (if (= 2 (count valid-options))
+      (let [[worst best] (->> valid-options
+                              (map #(count-space % req))
+                              (sort-by second))]
+        (-> moves
+            (update (ffirst worst) - 50)
+            (update (ffirst best) + 50)))
+      moves)))
 
 (defn find-food
   [moves
@@ -59,17 +115,12 @@
           moves
           food))
 
-(defn prefer-space
-  [moves
-   req]
-  moves)
-
 (def active-heuristics
   [avoid-walls
    avoid-hazards
    avoid-snakes
-   find-food
-   prefer-space])
+   prefer-space
+   find-food])
 
 (defn apply-heuristics
   [req moves]
@@ -82,5 +133,5 @@
   ;; full destructuring map for request object
   {{:keys [id ruleset map source timeout] :as game} :game
    {:keys [height width food hazards snakes] :as board} :board
-   {:keys [shout body health id name length head customizations latency squad] :as you} "you"
+   {:keys [shout body health id name length head customizations latency squad] :as you} :you
    :keys [turn] :as req})
