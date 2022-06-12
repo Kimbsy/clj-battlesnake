@@ -123,7 +123,7 @@
   [avoid-walls
    avoid-hazards
    avoid-snakes
-   prefer-space
+#_   prefer-space
    find-food])
 
 (defn apply-heuristics
