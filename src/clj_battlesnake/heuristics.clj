@@ -2,12 +2,15 @@
   (:require [clj-battlesnake.common :as common]))
 
 (defn avoid-walls
-  [moves req]
-  (cond-> moves
-    (common/at-top? req) (assoc :up 0)
-    (common/at-bottom? req) (assoc :down 0)
-    (common/at-left? req) (assoc :left 0)
-    (common/at-right? req) (assoc :right 0)))
+  [moves
+   {{:keys [ruleset]} :game :as req}]
+  (if-not (= "wrapped" (:name ruleset))
+    (cond-> moves
+      (common/at-top? req) (assoc :up 0)
+      (common/at-bottom? req) (assoc :down 0)
+      (common/at-left? req) (assoc :left 0)
+      (common/at-right? req) (assoc :right 0))
+    moves))
 
 (defn avoid-hazards
   [moves
