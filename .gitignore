@@ -13,7 +13,7 @@ pom.xml.asc
 .nrepl-port
 .cpcache/
 
-!/target/clj-battlesnake-1.0.0-standalone.jar
+!target/clj-battlesnake-1.0.0-standalone.jar
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
