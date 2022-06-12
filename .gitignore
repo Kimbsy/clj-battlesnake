@@ -3,7 +3,8 @@ pom.xml.asc
 *.class
 /lib/
 /classes/
-/target/
+target/*
+!target/clj-battlesnake-1.0.0-standalone.jar
 /checkouts/
 .lein-deps-sum
 .lein-repl-history
@@ -12,7 +13,6 @@ pom.xml.asc
 .nrepl-port
 .cpcache/
 
-!target/clj-battlesnake-1.0.0-standalone.jar
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
