@@ -9,10 +9,10 @@
    {{:keys [ruleset]} :game :as req}]
   (if-not (= "wrapped" (:name ruleset))
     (cond-> moves
-      (common/at-top? req) (assoc :up 0)
-      (common/at-bottom? req) (assoc :down 0)
-      (common/at-left? req) (assoc :left 0)
-      (common/at-right? req) (assoc :right 0))
+      (common/at-top? req) (assoc :up ##-Inf)
+      (common/at-bottom? req) (assoc :down ##-Inf)
+      (common/at-left? req) (assoc :left ##-Inf)
+      (common/at-right? req) (assoc :right ##-Inf))
     moves))
 
 (defn avoid-hazards
@@ -26,10 +26,10 @@
                               (map common/vectorize)
                               set)]
     (cond-> moves
-      (hazard-positions up) (assoc :up 0)
-      (hazard-positions down) (assoc :down 0)
-      (hazard-positions left) (assoc :left 0)
-      (hazard-positions right) (assoc :right 0))))
+      (hazard-positions up) (assoc :up ##-Inf)
+      (hazard-positions down) (assoc :down ##-Inf)
+      (hazard-positions left) (assoc :left ##-Inf)
+      (hazard-positions right) (assoc :right ##-Inf))))
 
 (defn avoid-snakes
   [moves
@@ -43,10 +43,10 @@
                              (map common/vectorize)
                              set)]
     (cond-> moves
-      (snake-positions up) (assoc :up 0)
-      (snake-positions down) (assoc :down 0)
-      (snake-positions left) (assoc :left 0)
-      (snake-positions right) (assoc :right 0))))
+      (snake-positions up) (assoc :up ##-Inf)
+      (snake-positions down) (assoc :down ##-Inf)
+      (snake-positions left) (assoc :left ##-Inf)
+      (snake-positions right) (assoc :right ##-Inf))))
 
 (defn allowed?
   "Check that a position is not a snake, nor a hazard, nor out of
