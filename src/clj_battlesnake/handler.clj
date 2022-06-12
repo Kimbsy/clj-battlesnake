@@ -40,18 +40,11 @@
   [head width]
   (= (dec width) (get head "x")))
 
-(defn apply-modifications
-  [moves mods]
-  (reduce (fn [acc [k f]]
-            (update acc k f))
-          moves
-          mods))
-
 (defn apply-heuristics
   [moves req heuristics]
   (reduce (fn [acc {:keys [pred mods]}]
             (if (pred req)
-              (apply-modifications acc mods)
+              (mods acc)
               acc))
           moves
           heuristics))
@@ -60,25 +53,29 @@
   {:pred (fn [req]
            (at-top? (get-in req ["you" "head"])
                     (get-in req ["board" "height"])))
-   :mods {"top" #(* 0 %)}})
+   :mods #(assoc % "up" 0)})
 
 (def dont-hit-bottom
   {:pred (fn [req]
            (at-bottom? (get-in req ["you" "head"])
                        (get-in req ["board" "height"])))
-   :mods {"down" #(* 0 %)}})
+   :mods #(assoc % "down" 0)})
 
 (def dont-hit-left
   {:pred (fn [req]
            (at-left? (get-in req ["you" "head"])
                      (get-in req ["board" "width"])))
-   :mods {"left" #(* 0 %)}})
+   :mods #(assoc % "left" 0)})
 
 (def dont-hit-right
   {:pred (fn [req]
            (at-right? (get-in req ["you" "head"])
                       (get-in req ["board" "width"])))
-   :mods {"right" #(* 0 %)}})
+   :mods #(assoc % "right" 0)})
+
+(def dont-hit-snakes
+  {:pred (fn [req]
+           )})
 
 (def base-moves
   {"up" 100
