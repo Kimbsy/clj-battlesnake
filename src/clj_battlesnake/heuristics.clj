@@ -84,7 +84,7 @@
   ;; cardinal adjacency each time
   (let [adjacent-positions (common/head-adjacent-positions req)
         starting-pos (direction adjacent-positions)]
-    [dir-kv (count (flood-fill req #{} starting-pos 3))]))
+    [dir-kv (count (flood-fill req #{} starting-pos 5))]))
 
 (defn prefer-space
   "Try not to get trapped in dead ends by preferring larger contiguous
@@ -93,14 +93,12 @@
    req]
   (let [valid-options (filter (comp pos? second) moves)
         head-pos (common/head-adjacent-positions req)]
-    (if (= 2 (count valid-options))
-      (let [[worst best] (->> valid-options
-                              (map #(count-space % req))
-                              (sort-by second))]
-        (-> moves
-            (update (ffirst worst) - 50)
-            (update (ffirst best) + 50)))
-      moves)))
+    (let [[worst best] (->> valid-options
+                            (map #(count-space % req))
+                            (sort-by second))]
+      (-> moves
+          (update (ffirst worst) - 50)
+          (update (ffirst best) + 50)))))
 
 (defn find-food
   [moves
