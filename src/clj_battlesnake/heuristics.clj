@@ -68,11 +68,12 @@
          (not (disallowed-positions [x y])))))
 
 (defn flood-fill
-  [req spaces pos]
-  (when-not (spaces pos)
-    (when (allowed? pos req)
-      (apply conj spaces pos (mapcat #(flood-fill req (conj spaces pos) %)
-                                     (vals (common/cardinal-adjacent-positions pos)))))))
+  [req spaces pos i]
+  (when (pos? i)
+    (when-not (spaces pos)
+      (when (allowed? pos req)
+        (apply conj spaces pos (mapcat #(flood-fill req (conj spaces pos) % (dec i))
+                                       (vals (common/cardinal-adjacent-positions pos))))))))
 
 (defn count-space
   [[direction _ :as dir-kv]
@@ -83,7 +84,7 @@
   ;; cardinal adjacency each time
   (let [adjacent-positions (common/head-adjacent-positions req)
         starting-pos (direction adjacent-positions)]
-    [dir-kv (count (flood-fill req #{} starting-pos))]))
+    [dir-kv (count (flood-fill req #{} starting-pos 10))]))
 
 (defn prefer-space
   "Try not to get trapped in dead ends by preferring larger contiguous
