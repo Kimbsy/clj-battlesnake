@@ -41,3 +41,10 @@
 (defn head-adjacent-positions
   [{{{:keys [x y]} :head} :you}]
   (cardinal-adjacent-positions [x y]))
+
+(defn distance
+  [[x1 y1] [x2 y2]]
+  (let [dx (- x2 x1)
+        dy (- y2 y1)]
+    (Math/sqrt (+ (Math/pow dx 2)
+                  (Math/pow dy 2)))))

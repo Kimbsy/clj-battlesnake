@@ -101,7 +101,6 @@
                     ffirst)]
       (update moves worst - 50))))
 
-;; This should really only target the closest food?
 (defn find-food
   [moves
    {{:keys [food]} :board
@@ -109,10 +108,10 @@
     :as req}]
   (reduce (fn [acc fd]
             (cond-> acc
-              (< (:y head) (:y fd)) (update :up + 20)
-              (> (:y head) (:y fd)) (update :down + 20)
-              (> (:x head) (:x fd)) (update :left + 20)
-              (< (:x head) (:x fd)) (update :right + 20)))
+              (< (:y head) (:y fd)) (update :up + (max 0 (- 20 (* 2 (common/distance (common/vectorize head) (common/vectorize fd))))))
+              (> (:y head) (:y fd)) (update :down + (max 0 (- 20 (* 2 (common/distance (common/vectorize head) (common/vectorize fd))))))
+              (> (:x head) (:x fd)) (update :left + (max 0 (- 20 (* 2 (common/distance (common/vectorize head) (common/vectorize fd))))))
+              (< (:x head) (:x fd)) (update :right + (max 0 (- 20 (* 2 (common/distance (common/vectorize head) (common/vectorize fd))))))))
           moves
           food))
 
