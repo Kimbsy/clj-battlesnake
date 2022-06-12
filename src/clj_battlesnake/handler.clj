@@ -109,7 +109,6 @@
 
 (def app
   (-> app-routes
-      (wrap-defaults site-defaults)
       wrap-json-body
       wrap-json-response))
 
