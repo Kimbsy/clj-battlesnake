@@ -93,12 +93,11 @@
    req]
   (let [valid-options (filter (comp pos? second) moves)
         head-pos (common/head-adjacent-positions req)]
-    (let [[worst best] (->> valid-options
-                            (map #(count-space % req))
-                            (sort-by second))]
-      (-> moves
-          (update (ffirst worst) - 50)
-          (update (ffirst best) + 50)))))
+    (let [worst (->> valid-options
+                    (map #(count-space % req))
+                    (sort-by second)
+                    ffirst)]
+      (update moves worst - 50))))
 
 (defn find-food
   [moves
