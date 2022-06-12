@@ -5,6 +5,7 @@
             [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
             [ring.util.response :refer [response]]
             [cheshire.core :as json]
+            [clojure.java.io :as io]
             [clojure.set :as s]))
 
 (defn get-handler
@@ -111,11 +112,12 @@
                                                   dont-hit-bottom
                                                   dont-hit-left
                                                   dont-hit-right
-                                                  dont-hit-snakes])]
-    (response {"move" (->> results
-                           (remove (comp zero? second))
-                           keys
-                           rand-nth)})))
+                                                  dont-hit-snakes])
+        valid-options (remove (comp zero? second) results)]
+    (when (seq valid-options)
+      (response {"move" (->> valid-options
+                             keys
+                             rand-nth)}))))
 
 (defroutes app-routes
   (GET "/" req (get-handler (:body req)))
