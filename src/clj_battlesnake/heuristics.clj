@@ -84,7 +84,7 @@
   ;; cardinal adjacency each time
   (let [adjacent-positions (common/head-adjacent-positions req)
         starting-pos (direction adjacent-positions)]
-    [dir-kv (count (flood-fill req #{} starting-pos 10))]))
+    [dir-kv (count (flood-fill req #{} starting-pos 3))]))
 
 (defn prefer-space
   "Try not to get trapped in dead ends by preferring larger contiguous
