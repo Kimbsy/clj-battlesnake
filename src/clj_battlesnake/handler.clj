@@ -42,40 +42,58 @@
 
 (defn apply-heuristics
   [moves req heuristics]
-  (reduce (fn [acc {:keys [pred mods]}]
-            (if (pred req)
-              (mods acc)
-              acc))
+  (reduce (fn [acc heuristic]
+            (heuristic acc req))
           moves
           heuristics))
 
-(def dont-hit-top
-  {:pred (fn [req]
-           (at-top? (get-in req ["you" "head"])
-                    (get-in req ["board" "height"])))
-   :mods #(assoc % "up" 0)})
+(defn dont-hit-top
+  [moves req]
+  (if (at-top? (get-in req ["you" "head"])
+               (get-in req ["board" "height"]))
+    (assoc moves "up" 0)
+    moves))
 
-(def dont-hit-bottom
-  {:pred (fn [req]
-           (at-bottom? (get-in req ["you" "head"])
-                       (get-in req ["board" "height"])))
-   :mods #(assoc % "down" 0)})
+(defn dont-hit-bottom
+  [moves req]
+  (if (at-bottom? (get-in req ["you" "head"])
+                  (get-in req ["board" "height"]))
+    (assoc moves "down" 0)
+    moves))
 
-(def dont-hit-left
-  {:pred (fn [req]
-           (at-left? (get-in req ["you" "head"])
-                     (get-in req ["board" "width"])))
-   :mods #(assoc % "left" 0)})
+(defn dont-hit-left
+  [moves req]
+  (if (at-left? (get-in req ["you" "head"])
+                (get-in req ["board" "width"]))
+    (assoc moves "left" 0)
+    moves))
 
-(def dont-hit-right
-  {:pred (fn [req]
-           (at-right? (get-in req ["you" "head"])
-                      (get-in req ["board" "width"])))
-   :mods #(assoc % "right" 0)})
+(defn dont-hit-right
+  [moves req]
+  (if (at-right? (get-in req ["you" "head"])
+                 (get-in req ["board" "width"]))
+    (assoc moves "right" 0)
+    moves))
 
-(def dont-hit-snakes
-  {:pred (constantly true)
-   :mods #(assoc % "left" 0)})
+(defn dont-hit-snakes
+  [moves
+   {{:strs [snakes]} "board"
+    {:strs [head]} "you"
+    :as req}]
+  (let [{:strs [x y]} head
+        u [x (inc y)]
+        d [x (dec y)]
+        l [(dec x) y]
+        r [(inc x) y]
+        snake-positions (->> snakes
+                             (mapcat #(get % "body"))
+                             (map (fn [p] [(get p "x") (get p "y")]))
+                             set)]
+    (cond-> moves
+      (snake-positions u) (assoc "up" 0)
+      (snake-positions d) (assoc "down" 0)
+      (snake-positions l) (assoc "left" 0)
+      (snake-positions r) (assoc "right" 0))))
 
 (def base-moves
   {"up" 100
@@ -93,7 +111,7 @@
                                                   dont-hit-bottom
                                                   dont-hit-left
                                                   dont-hit-right
-                                                  #_dont-hit-snakes])]
+                                                  dont-hit-snakes])]
     (response {"move" (->> results
                            (remove (comp zero? second))
                            keys
