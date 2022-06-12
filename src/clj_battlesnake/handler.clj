@@ -26,20 +26,24 @@
   (response nil))
 
 (defn at-top?
-  [head height]
-  (= (dec height) (get head "y")))
+  [req]
+  (= (get-in req ["you" "head" "y"])
+     (dec (get-in req ["board" "height"]))))
 
 (defn at-bottom?
-  [head height]
-  (= 0 (get head "y")))
+  [req]
+  (= (get-in req ["you" "head" "y"])
+     0))
 
 (defn at-left?
-  [head width]
-  (= 0 (get head "x")))
+  [req]
+  (= (get-in req ["you" "head" "x"])
+     0))
 
 (defn at-right?
-  [head width]
-  (= (dec width) (get head "x")))
+  [req]
+  (= (get-in req ["you" "head" "x"])
+     (dec (get-in req ["board" "width"]))))
 
 (defn apply-heuristics
   [moves req heuristics]
@@ -48,35 +52,15 @@
           moves
           heuristics))
 
-(defn dont-hit-top
+(defn avoid-walls
   [moves req]
-  (if (at-top? (get-in req ["you" "head"])
-               (get-in req ["board" "height"]))
-    (assoc moves "up" 0)
-    moves))
+  (cond-> moves
+      (at-top? req) (assoc "up" 0)
+      (at-bottom? req) (assoc "down" 0)
+      (at-left? req) (assoc "left" 0)
+      (at-right? req) (assoc "right" 0)))
 
-(defn dont-hit-bottom
-  [moves req]
-  (if (at-bottom? (get-in req ["you" "head"])
-                  (get-in req ["board" "height"]))
-    (assoc moves "down" 0)
-    moves))
-
-(defn dont-hit-left
-  [moves req]
-  (if (at-left? (get-in req ["you" "head"])
-                (get-in req ["board" "width"]))
-    (assoc moves "left" 0)
-    moves))
-
-(defn dont-hit-right
-  [moves req]
-  (if (at-right? (get-in req ["you" "head"])
-                 (get-in req ["board" "width"]))
-    (assoc moves "right" 0)
-    moves))
-
-(defn dont-hit-snakes
+(defn avoid-snakes
   [moves
    {{:strs [snakes]} "board"
     {:strs [head]} "you"
@@ -107,13 +91,10 @@
     {:strs [height width food hazards snakes] :as board} "board"
     {:strs [shout body health id name length head customizations latency squad] :as you} "you"
     :strs [turn] :as req}]
-
-  (let [results (apply-heuristics base-moves req [dont-hit-top
-                                                  dont-hit-bottom
-                                                  dont-hit-left
-                                                  dont-hit-right
-                                                  dont-hit-snakes])
+  (let [results (apply-heuristics base-moves req [avoid-walls
+                                                  avoid-snakes])
         valid-options (remove (comp zero? second) results)]
+    (prn results)
     (when (seq valid-options)
       (response {"move" (->> valid-options
                              keys
@@ -128,8 +109,8 @@
 
 (def app
   (-> app-routes
-      ;; (wrap-defaults site-defaults)
+      (wrap-defaults site-defaults)
       wrap-json-body
       wrap-json-response))
 
-;; curl -XPOST localhost:3000/move --header "Content-type:application/json" -d "$(cat resources/example-request.json)"
+;; curl -XPOST http://clj-battlesnake-dev.us-west-2.elasticbeanstalk.com/move --header "Content-type:application/json" -d "$(cat resources/example-request.json)"
