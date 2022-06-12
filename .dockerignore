@@ -1,4 +1,4 @@
-# Elastic Beanstalk Files
+        # Elastic Beanstalk Files
 .elasticbeanstalk/*
 .git
 .gitignore

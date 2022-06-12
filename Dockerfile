@@ -6,10 +6,11 @@ RUN mkdir -p /app
 WORKDIR /app
 
 # Copy only the target jar over
-COPY target/battlesnake-1.0.0-standalone.jar .
+COPY target/clj-battlesnake-1.0.0-standalone.jar .
+COPY Dockerfile .
 
 # Open the port
 EXPOSE 80
 
 # Run the JAR
-CMD java -jar battlesnake-1.0.0-standalone.jar
+CMD java -jar clj-battlesnake-1.0.0-standalone.jar
