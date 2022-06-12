@@ -96,6 +96,7 @@
     (let [worst (->> valid-options
                     (map #(count-space % req))
                     (sort-by second)
+                    first
                     ffirst)]
       (update moves worst - 50))))
 
