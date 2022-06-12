@@ -71,6 +71,7 @@
   [req spaces pos i]
   (when (pos? i)
     (when-not (spaces pos)
+      ;; we should really check if this pos is a tail
       (when (allowed? pos req)
         (apply conj spaces pos (mapcat #(flood-fill req (conj spaces pos) % (dec i))
                                        (vals (common/cardinal-adjacent-positions pos))))))))
@@ -84,7 +85,7 @@
   ;; cardinal adjacency each time
   (let [adjacent-positions (common/head-adjacent-positions req)
         starting-pos (direction adjacent-positions)]
-    [dir-kv (count (flood-fill req #{} starting-pos 5))]))
+    [dir-kv (count (flood-fill req #{} starting-pos 7))]))
 
 (defn prefer-space
   "Try not to get trapped in dead ends by preferring larger contiguous
@@ -98,7 +99,7 @@
                     (sort-by second)
                     first
                     ffirst)]
-      (update moves worst - 50))))
+      (update moves worst - 80))))
 
 (defn find-food
   [moves
