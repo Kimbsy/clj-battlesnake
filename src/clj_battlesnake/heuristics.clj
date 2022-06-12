@@ -51,23 +51,25 @@
 (defn allowed?
   "Check that a position is not a snake, nor a hazard, nor out of
   bounds."
-  [[x y]
+  [[init-x init-y :as pos]
    {{:keys [ruleset]} :game
     {:keys [height width hazards snakes]} :board}]
-  (and (or (= "wrapped" (:name ruleset))
-           (and (<= 0 x)
-                (<= 0 y)
-                (< x width)
-                (< y height)))
-       (let [hazard-positions (->> hazards
-                                   (map common/vectorize)
-                                   set)
-             snake-positions (->> snakes
-                                  (mapcat :body)
-                                  (map common/vectorize)
-                                  set)
-             disallowed-positions (s/union hazard-positions snake-positions)]
-         (not (disallowed-positions [x y])))))
+  (let [[x y] (cond-> pos
+                (or (< init-x 0) (<= width init-x)) (update 0 mod width)
+                (or (< init-y 0) (<= height init-y)) (update 1 mod height))]
+    (and (and (<= 0 x)
+              (<= 0 y)
+              (< x width)
+              (< y height))
+         (let [hazard-positions (->> hazards
+                                     (map common/vectorize)
+                                     set)
+               snake-positions (->> snakes
+                                    (mapcat :body)
+                                    (map common/vectorize)
+                                    set)
+               disallowed-positions (s/union hazard-positions snake-positions)]
+           (not (disallowed-positions [x y]))))))
 
 (defn flood-fill
   [req spaces pos i]
