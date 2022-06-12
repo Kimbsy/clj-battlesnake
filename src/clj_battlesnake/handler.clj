@@ -110,12 +110,14 @@
                                                   avoid-snakes
                                                   find-food])
         valid-options (remove (comp zero? second) results)]
-    (prn results)
     (when (seq valid-options)
       (response {"move" (->> valid-options
-                             (sort-by second)
-                             reverse
-                             ffirst)}))))
+                             (group-by second)
+                             (sort-by first)
+                             last
+                             second
+                             rand-nth
+                             first)}))))
 
 (defroutes app-routes
   (GET "/" req (get-handler (:body req)))
