@@ -74,8 +74,8 @@
    :mods #(assoc % "right" 0)})
 
 (def dont-hit-snakes
-  {:pred (fn [req]
-           )})
+  {:pred (constantly true)
+   :mods #(assoc % "left" 0)})
 
 (def base-moves
   {"up" 100
