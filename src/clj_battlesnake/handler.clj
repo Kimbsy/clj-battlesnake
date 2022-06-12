@@ -93,7 +93,7 @@
                                                   dont-hit-bottom
                                                   dont-hit-left
                                                   dont-hit-right
-                                                  dont-hit-snakes])]
+                                                  #_dont-hit-snakes])]
     (response {"move" (->> results
                            (remove (comp zero? second))
                            keys
