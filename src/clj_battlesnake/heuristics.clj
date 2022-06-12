@@ -52,11 +52,13 @@
   "Check that a position is not a snake, nor a hazard, nor out of
   bounds."
   [[x y]
-   {{:keys [height width hazards snakes]} :board}]
-  (and (<= 0 x)
-       (<= 0 y)
-       (< x width)
-       (< y height)
+   {{:keys [ruleset]} :game
+    {:keys [height width hazards snakes]} :board}]
+  (and (or (= "wrapped" (:name ruleset))
+           (and (<= 0 x)
+                (<= 0 y)
+                (< x width)
+                (< y height)))
        (let [hazard-positions (->> hazards
                                    (map common/vectorize)
                                    set)
