@@ -92,7 +92,8 @@
   (let [results (apply-heuristics base-moves req [dont-hit-top
                                                   dont-hit-bottom
                                                   dont-hit-left
-                                                  dont-hit-right])]
+                                                  dont-hit-right
+                                                  dont-hit-snakes])]
     (response {"move" (->> results
                            (remove (comp zero? second))
                            keys
