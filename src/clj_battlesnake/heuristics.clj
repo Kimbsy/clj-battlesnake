@@ -11,8 +11,19 @@
 
 (defn avoid-hazards
   [moves
-   req]
-  moves)
+   {{:keys [hazards]} :board
+    {:keys [head]} :you
+    :as req}]
+  (let [{:keys [x y]} head
+        {:keys [u d l r]} (common/cardinal-adjacent-positions req)
+        hazard-positions (->> hazards
+                              (map common/vectorize)
+                              set)]
+    (cond-> moves
+      (hazard-positions u) (assoc :up 0)
+      (hazard-positions d) (assoc :down 0)
+      (hazard-positions l) (assoc :left 0)
+      (hazard-positions r) (assoc :right 0))))
 
 (defn avoid-snakes
   [moves
@@ -20,13 +31,10 @@
     {:keys [head]} :you
     :as req}]
   (let [{:keys [x y]} head
-        u [x (inc y)]
-        d [x (dec y)]
-        l [(dec x) y]
-        r [(inc x) y]
+        {:keys [u d l r]} (common/cardinal-adjacent-positions req)
         snake-positions (->> snakes
                              (mapcat :body)
-                             (map (fn [p] [(:x p) (:y p)]))
+                             (map common/vectorize)
                              set)]
     (cond-> moves
       (snake-positions u) (assoc :up 0)
