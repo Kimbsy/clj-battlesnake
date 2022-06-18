@@ -40,17 +40,26 @@
       (#{:S :H} (get-tile left)) (assoc :left ##-Inf)
       (#{:S :H} (get-tile right)) (assoc :right ##-Inf))))
 
+(defn wrap-pos
+  [[x y] {:keys [width height]}]
+  [(mod x width)
+   (mod y height)])
+
 (defn flood-fill
   [board pos {:keys [width height] :as conf} spaces i]
   (when (pos? i)
     (when-not (spaces pos)
       ;; @TODO: could this also allow tails?
-      ;; @TODO: should account for wrapped ruleset
-      (let [get-tile (tile-fn board conf)]
-        (when (#{:_ :f} (get-tile pos))
-          (apply conj spaces pos (mapcat
-                                  #(flood-fill board % conf (conj spaces pos) (dec i))
-                                  (vals (common/cardinal-adjacent-positions pos)))))))))
+      (let [pos (if (wrapped? conf)
+                  (wrap-pos pos conf)
+                  pos)]
+        (when (#{:_ :f} (board pos))
+          (apply conj
+                 spaces
+                 pos
+                 (mapcat
+                  #(flood-fill board % conf (conj spaces pos) (dec i))
+                  (vals (common/cardinal-adjacent-positions pos)))))))))
 
 ;; @TODO: this is naiive, we should record number of tails, heads etc. score for tail should be realative to number of spaces.
 (def tile-score
@@ -59,11 +68,10 @@
 
 (defn score-space
   [board pos conf]
-  (let [get-tile (tile-fn board conf)]
-    (->> (flood-fill board pos conf #{} 10)
-         (map get-tile)
-         (map tile-score)
-         (reduce +))))
+  (->> (flood-fill board pos conf #{} 10)
+       (map board)
+       (map tile-score)
+       (reduce +)))
 
 (defn prefer-valuable-area
   [moves board pos conf]
@@ -79,13 +87,10 @@
             moves
             scores)))
 
-;; we should be able to turn these on and off depending on e.g. we're low on energy, we're bigger than other snakes etc.
+;; @TODO: we should be able to turn these on and off depending on e.g. we're low on energy, we're bigger than other snakes etc.
 (defn apply-heuristics
   [moves board pos conf]
   (-> moves
       (avoid-walls board pos conf)
       (avoid-hazards board pos conf)
-      ;; (find-food board pos conf)
-      ;; (prefer-space board pos conf)
-      (prefer-valuable-area board pos conf)
-      ))
+      (prefer-valuable-area board pos conf)))
