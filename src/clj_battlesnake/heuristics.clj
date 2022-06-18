@@ -101,7 +101,7 @@
        first))
 
 (defn find-food
-  [moves board [x y :as pos]]
+  [moves board [x y :as pos] conf]
   (if-let [[fx fy] (closest-food board pos)]
     (cond-> moves
       (< y fy) (update :up * 1.5)
@@ -115,5 +115,5 @@
   [moves board pos conf]
   (-> moves
       (avoid-walls board pos conf)
-      (avoid-hazards board pos)
-      (find-food board pos)))
+      (avoid-hazards board pos conf)
+      (find-food board pos conf)))
