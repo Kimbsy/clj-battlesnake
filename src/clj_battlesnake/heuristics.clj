@@ -6,6 +6,14 @@
   [{:keys [ruleset]}]
   (= "wrapped" (:name ruleset)))
 
+(defn tile-fn
+  [board {:keys [width height] :as conf}]
+  (if (wrapped? conf)
+    (fn [[x y]]
+      (board [(mod x width)
+              (mod y height)]))
+    #(board %)))
+
 (defn avoid-walls
   "If we're using the `wrapped` ruleset we shouldn't care about
   walls."
@@ -25,27 +33,24 @@
   [moves board pos {:keys [width height] :as conf}]
   (let [{:keys [up down left right]} (common/cardinal-adjacent-positions pos)
         ;; in wrapped-mode we should check the other sides
-        get-value-fn (if (wrapped? conf)
-                       (fn [[x y]]
-                          (board [(mod x width)
-                                  (mod y height)]))
-                       #(board %))]
+        get-tile (tile-fn board conf)]
     (cond-> moves
-      (#{:S :H} (get-value-fn up)) (assoc :up ##-Inf)
-      (#{:S :H} (get-value-fn down)) (assoc :down ##-Inf)
-      (#{:S :H} (get-value-fn left)) (assoc :left ##-Inf)
-      (#{:S :H} (get-value-fn right)) (assoc :right ##-Inf))))
+      (#{:S :H} (get-tile up)) (assoc :up ##-Inf)
+      (#{:S :H} (get-tile down)) (assoc :down ##-Inf)
+      (#{:S :H} (get-tile left)) (assoc :left ##-Inf)
+      (#{:S :H} (get-tile right)) (assoc :right ##-Inf))))
 
 (defn flood-fill
-  [board pos spaces i]
+  [board pos {:keys [width height] :as conf} spaces i]
   (when (pos? i)
     (when-not (spaces pos)
       ;; @TODO: could this also allow tails?
       ;; @TODO: should account for wrapped ruleset
-      (when (#{:_ :f} (board pos))
-        (apply conj spaces pos (mapcat
-                                #(flood-fill board % (conj spaces pos) (dec i))
-                                (vals (common/cardinal-adjacent-positions pos))))))))
+      (let [get-tile (tile-fn board conf)]
+        (when (#{:_ :f} (get-tile pos))
+          (apply conj spaces pos (mapcat
+                                  #(flood-fill board % conf (conj spaces pos) (dec i))
+                                  (vals (common/cardinal-adjacent-positions pos)))))))))
 
 ;; @TODO: this is naiive, we should record number of tails, heads etc. score for tail should be realative to number of spaces.
 (def tile-score
@@ -53,57 +58,26 @@
    :f 2})
 
 (defn score-space
-  [board pos]
-  (->> (flood-fill board pos #{} 10)
-       (map board)
-       (map tile-score)
-       (reduce +)))
+  [board pos conf]
+  (let [get-tile (tile-fn board conf)]
+    (->> (flood-fill board pos conf #{} 10)
+         (map get-tile)
+         (map tile-score)
+         (reduce +))))
 
 (defn prefer-valuable-area
   [moves board pos conf]
   (let [valid-options (map first (filter (comp pos? second) moves))
         cardinal-positions (common/cardinal-adjacent-positions pos)
         scores (map (fn [direction]
-                      [direction (score-space board (direction cardinal-positions))])
+                      [direction (score-space board
+                                              (direction cardinal-positions)
+                                              conf)])
                     valid-options)]
     (reduce (fn [acc [direction score]]
               (update acc direction * (+ 1 (/ score 10))))
             moves
             scores)))
-
-;; (defn count-space
-;;   [board cardinal-positions direction]
-;;   [direction (count (flood-fill board (direction cardinal-positions) #{} 10))])
-
-;; (defn prefer-space
-;;   [moves board pos conf]
-;;   (let [valid-options (map first (filter (comp pos? second) moves))
-;;         cardinal-positions (common/cardinal-adjacent-positions pos)
-;;         best (->> valid-options
-;;                   (map (partial count-space board cardinal-positions))
-;;                   (sort-by second)
-;;                   last
-;;                   first)]
-;;     (update moves best * 1.2)))
-
-;; (defn closest-food
-;;   [board pos]
-;;   (->> board
-;;        (filter (fn [[p v]] (= :f v)))
-;;        (map first)
-;;        (sort-by (partial common/distance pos))
-;;        first))
-
-;; ;; @TODO: this should really be based on the shortest available route to food, not just distance.
-;; (defn find-food
-;;   [moves board [x y :as pos] conf]
-;;   (if-let [[fx fy] (closest-food board pos)]
-;;     (cond-> moves
-;;       (< y fy) (update :up * 1.5)
-;;       (< fy y) (update :down * 1.5)
-;;       (< fx x) (update :left * 1.5)
-;;       (< x fx) (update :right * 1.5))
-;;     moves))
 
 ;; we should be able to turn these on and off depending on e.g. we're low on energy, we're bigger than other snakes etc.
 (defn apply-heuristics
