@@ -21,13 +21,19 @@
 ;; @TODO: we should be allowed to move into positions that are snake tails
 (defn avoid-hazards
   "Never move into positions with hazards or snakes."
-  [moves board pos]
-  (let [{:keys [up down left right]} (common/cardinal-adjacent-positions pos)]
+  [moves board pos {:keys [width height] :as conf}]
+  (let [{:keys [up down left right]} (common/cardinal-adjacent-positions pos)
+        ;; in wrapped-mode we should check the other sides
+        get-value-fn (if (wrapped? conf)
+                       (fn [[x y]]
+                          (board [(mod x width)
+                                  (mod y height)]))
+                       #(board %))]
     (cond-> moves
-      (#{:S :H} (board up)) (assoc :up ##-Inf)
-      (#{:S :H} (board down)) (assoc :down ##-Inf)
-      (#{:S :H} (board left)) (assoc :left ##-Inf)
-      (#{:S :H} (board right)) (assoc :right ##-Inf))))
+      (#{:S :H} (get-value-fn up)) (assoc :up ##-Inf)
+      (#{:S :H} (get-value-fn down)) (assoc :down ##-Inf)
+      (#{:S :H} (get-value-fn left)) (assoc :left ##-Inf)
+      (#{:S :H} (get-value-fn right)) (assoc :right ##-Inf))))
 
 #_(defn allowed?
   "Check that a position is not a snake, nor a hazard, nor out of
