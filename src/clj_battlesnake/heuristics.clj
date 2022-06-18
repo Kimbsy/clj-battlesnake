@@ -47,39 +47,63 @@
                                 #(flood-fill board % (conj spaces pos) (dec i))
                                 (vals (common/cardinal-adjacent-positions pos))))))))
 
-(defn count-space
-  [board cardinal-positions direction]
-  [direction (count (flood-fill board (direction cardinal-positions) #{} 10))])
+;; @TODO: this is naiive, we should record number of tails, heads etc. score for tail should be realative to number of spaces.
+(def tile-score
+  {:_ 1
+   :f 2})
 
-(defn prefer-space
+(defn score-space
+  [board pos]
+  (->> (flood-fill board pos #{} 10)
+       (map board)
+       (map tile-score)
+       (reduce +)))
+
+(defn prefer-valuable-area
   [moves board pos conf]
   (let [valid-options (map first (filter (comp pos? second) moves))
         cardinal-positions (common/cardinal-adjacent-positions pos)
-        best (->> valid-options
-                  (mapv (partial count-space board cardinal-positions))
-                  (sort-by second)
-                  last
-                  first)]
-    (update moves best * 1.2)))
+        scores (map (fn [direction]
+                      [direction (score-space board (direction cardinal-positions))])
+                    valid-options)]
+    (reduce (fn [acc [direction score]]
+              (update acc direction * (+ 1 (/ score 10))))
+            moves
+            scores)))
 
-(defn closest-food
-  [board pos]
-  (->> board
-       (filter (fn [[p v]] (= :f v)))
-       (map first)
-       (sort-by (partial common/distance pos))
-       first))
+;; (defn count-space
+;;   [board cardinal-positions direction]
+;;   [direction (count (flood-fill board (direction cardinal-positions) #{} 10))])
 
-;; @TODO: this should really be based on the shortest available route to food, not just distance.
-(defn find-food
-  [moves board [x y :as pos] conf]
-  (if-let [[fx fy] (closest-food board pos)]
-    (cond-> moves
-      (< y fy) (update :up * 1.5)
-      (< fy y) (update :down * 1.5)
-      (< fx x) (update :left * 1.5)
-      (< x fx) (update :right * 1.5))
-    moves))
+;; (defn prefer-space
+;;   [moves board pos conf]
+;;   (let [valid-options (map first (filter (comp pos? second) moves))
+;;         cardinal-positions (common/cardinal-adjacent-positions pos)
+;;         best (->> valid-options
+;;                   (map (partial count-space board cardinal-positions))
+;;                   (sort-by second)
+;;                   last
+;;                   first)]
+;;     (update moves best * 1.2)))
+
+;; (defn closest-food
+;;   [board pos]
+;;   (->> board
+;;        (filter (fn [[p v]] (= :f v)))
+;;        (map first)
+;;        (sort-by (partial common/distance pos))
+;;        first))
+
+;; ;; @TODO: this should really be based on the shortest available route to food, not just distance.
+;; (defn find-food
+;;   [moves board [x y :as pos] conf]
+;;   (if-let [[fx fy] (closest-food board pos)]
+;;     (cond-> moves
+;;       (< y fy) (update :up * 1.5)
+;;       (< fy y) (update :down * 1.5)
+;;       (< fx x) (update :left * 1.5)
+;;       (< x fx) (update :right * 1.5))
+;;     moves))
 
 ;; we should be able to turn these on and off depending on e.g. we're low on energy, we're bigger than other snakes etc.
 (defn apply-heuristics
@@ -87,5 +111,7 @@
   (-> moves
       (avoid-walls board pos conf)
       (avoid-hazards board pos conf)
-      (find-food board pos conf)
-      (prefer-space board pos conf)))
+      ;; (find-food board pos conf)
+      ;; (prefer-space board pos conf)
+      (prefer-valuable-area board pos conf)
+      ))
