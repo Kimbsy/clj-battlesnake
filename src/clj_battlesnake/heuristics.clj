@@ -60,7 +60,7 @@
                   (sort-by second)
                   last
                   first)]
-    (update moves best * 2)))
+    (update moves best * 1.2)))
 
 (defn closest-food
   [board pos]
