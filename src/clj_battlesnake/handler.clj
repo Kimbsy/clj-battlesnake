@@ -35,7 +35,8 @@
 
 (defn move-handler
   [req]
-  (let [results (h/apply-heuristics req base-moves)
+  (let [{:keys [board pos conf]} (common/parse-board req)
+        results (h/apply-heuristics base-moves board pos conf)
         valid-options (filter (comp pos? second) results)]
     (when (seq valid-options)
       (response {"move" (->> valid-options
