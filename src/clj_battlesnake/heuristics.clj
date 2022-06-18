@@ -19,6 +19,7 @@
     moves))
 
 ;; @TODO: we should be allowed to move into positions that are snake tails
+;; @TODO: we should be wary of positions that snake heads can move into
 (defn avoid-hazards
   "Never move into positions with hazards or snakes."
   [moves board pos {:keys [width height] :as conf}]
@@ -35,62 +36,31 @@
       (#{:S :H} (get-value-fn left)) (assoc :left ##-Inf)
       (#{:S :H} (get-value-fn right)) (assoc :right ##-Inf))))
 
-#_(defn allowed?
-  "Check that a position is not a snake, nor a hazard, nor out of
-  bounds."
-  [[init-x init-y :as pos]
-   {{:keys [ruleset]} :game
-    {:keys [height width hazards snakes]} :board}]
-  (let [[x y] (cond-> pos
-                (or (< init-x 0) (<= width init-x)) (update 0 mod width)
-                (or (< init-y 0) (<= height init-y)) (update 1 mod height))]
-    (and (and (<= 0 x)
-              (<= 0 y)
-              (< x width)
-              (< y height))
-         (let [hazard-positions (->> hazards
-                                     (map common/vectorize)
-                                     set)
-               snake-positions (->> snakes
-                                    (mapcat :body)
-                                    (map common/vectorize)
-                                    set)
-               disallowed-positions (s/union hazard-positions snake-positions)]
-           (not (disallowed-positions [x y]))))))
+(defn flood-fill
+  [board pos spaces i]
+  (when (pos? i)
+    (when-not (spaces pos)
+      ;; @TODO: could this also allow tails?
+      ;; @TODO: should account for wrapped ruleset
+      (when (#{:_ :f} (board pos))
+        (apply conj spaces pos (mapcat
+                                #(flood-fill board % (conj spaces pos) (dec i))
+                                (vals (common/cardinal-adjacent-positions pos))))))))
 
-;; (defn flood-fill
-;;   [req spaces pos i]
-;;   (when (pos? i)
-;;     (when-not (spaces pos)
-;;       ;; we should really check if this pos is a tail
-;;       (when (allowed? pos req)
-;;         (apply conj spaces pos (mapcat #(flood-fill req (conj spaces pos) % (dec i))
-;;                                        (vals (common/cardinal-adjacent-positions pos))))))))
+(defn count-space
+  [board cardinal-positions direction]
+  [direction (count (flood-fill board (direction cardinal-positions) #{} 10))])
 
-;; (defn count-space
-;;   [[direction _ :as dir-kv]
-;;    ;; This _should_ take into account `wrapped` rulesets
-;;    {{:keys [head] :as you} :you
-;;     :as req}]
-;;   ;; do a flood-fill for a direction from the head, only consider
-;;   ;; cardinal adjacency each time
-;;   (let [adjacent-positions (common/head-adjacent-positions req)
-;;         starting-pos (direction adjacent-positions)]
-;;     [dir-kv (count (flood-fill req #{} starting-pos 7))]))
-
-;; (defn prefer-space
-;;   "Try not to get trapped in dead ends by preferring larger contiguous
-;;   areas."
-;;   [moves
-;;    req]
-;;   (let [valid-options (filter (comp pos? second) moves)
-;;         head-pos (common/head-adjacent-positions req)]
-;;     (let [worst (->> valid-options
-;;                     (map #(count-space % req))
-;;                     (sort-by second)
-;;                     first
-;;                     ffirst)]
-;;       (update moves worst - 50))))
+(defn prefer-space
+  [moves board pos conf]
+  (let [valid-options (map first (filter (comp pos? second) moves))
+        cardinal-positions (common/cardinal-adjacent-positions pos)
+        best (->> valid-options
+                  (mapv (partial count-space board cardinal-positions))
+                  (sort-by second)
+                  last
+                  first)]
+    (update moves best * 2)))
 
 (defn closest-food
   [board pos]
@@ -100,6 +70,7 @@
        (sort-by (partial common/distance pos))
        first))
 
+;; @TODO: this should really be based on the shortest available route to food, not just distance.
 (defn find-food
   [moves board [x y :as pos] conf]
   (if-let [[fx fy] (closest-food board pos)]
@@ -116,4 +87,5 @@
   (-> moves
       (avoid-walls board pos conf)
       (avoid-hazards board pos conf)
-      (find-food board pos conf)))
+      (find-food board pos conf)
+      (prefer-space board pos conf)))
