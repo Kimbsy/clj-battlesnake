@@ -24,10 +24,10 @@
   [moves board pos]
   (let [{:keys [up down left right]} (common/cardinal-adjacent-positions pos)]
     (cond-> moves
-      (= #{:S :H} (board up)) (assoc :up ##-Inf)
-      (= #{:S :H} (board down)) (assoc :down ##-Inf)
-      (= #{:S :H} (board left)) (assoc :left ##-Inf)
-      (= #{:S :H} (board right)) (assoc :right ##-Inf))))
+      (#{:S :H} (board up)) (assoc :up ##-Inf)
+      (#{:S :H} (board down)) (assoc :down ##-Inf)
+      (#{:S :H} (board left)) (assoc :left ##-Inf)
+      (#{:S :H} (board right)) (assoc :right ##-Inf))))
 
 #_(defn allowed?
   "Check that a position is not a snake, nor a hazard, nor out of

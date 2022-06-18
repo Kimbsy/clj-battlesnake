@@ -40,8 +40,14 @@
    [:_ :_ :_ :_ :_]
    [:S :S :S :_ :f]])
 
+(def test-v
+  [[:_ :_ :_ :_ :_]
+   [:S :_ :_ :_ :_]
+   [:S :S :_ :_ :_]
+   [:_ :_ :_ :_ :_]
+   [:_ :_ :_ :_ :_]])
 
-
+(vec->map test-v)
 
 
 (= example-map (vec->map example-vector))
