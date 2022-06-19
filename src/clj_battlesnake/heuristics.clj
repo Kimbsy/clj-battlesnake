@@ -2,13 +2,9 @@
   (:require [clj-battlesnake.common :as common]
             [clojure.set :as s]))
 
-(defn wrapped?
-  [{:keys [ruleset]}]
-  (= "wrapped" (:name ruleset)))
-
 (defn tile-fn
   [board {:keys [width height] :as conf}]
-  (if (wrapped? conf)
+  (if (common/wrapped? conf)
     (fn [[x y]]
       (board [(mod x width)
               (mod y height)]))
@@ -18,7 +14,7 @@
   "If we're using the `wrapped` ruleset we shouldn't care about
   walls."
   [moves board [x y] {:keys [width height] :as conf}]
-  (if-not (wrapped? conf)
+  (if-not (common/wrapped? conf)
     (cond-> moves
       (= (dec height) y) (assoc :up ##-Inf)
       (= 0 y) (assoc :down ##-Inf)
@@ -40,18 +36,26 @@
       (#{:S :H} (get-tile left)) (assoc :left ##-Inf)
       (#{:S :H} (get-tile right)) (assoc :right ##-Inf))))
 
-(defn wrap-pos
-  [[x y] {:keys [width height]}]
-  [(mod x width)
-   (mod y height)])
+(defn beware-snake-heads
+  "Prefer not to go into a tile another snake could move into, unless
+  there are no other options."
+  [moves board pos conf]
+  (let [{:keys [up down left right]} (common/cardinal-adjacent-positions pos)
+        ;; in wrapped-mode we should check the other sides
+        get-tile (tile-fn board conf)]
+    (cond-> moves
+      (#{:S :H} (get-tile up)) (update :up * 0.5)
+      (#{:S :H} (get-tile down)) (update :down * 0.5)
+      (#{:S :H} (get-tile left)) (update :left * 0.5)
+      (#{:S :H} (get-tile right)) (update :right * 0.5))))
 
 (defn flood-fill
   [board pos {:keys [width height] :as conf} spaces i]
   (when (pos? i)
     (when-not (spaces pos)
       ;; @TODO: could this also allow tails?
-      (let [pos (if (wrapped? conf)
-                  (wrap-pos pos conf)
+      (let [pos (if (common/wrapped? conf)
+                  (common/wrap-pos pos conf)
                   pos)]
         (when (#{:_ :f} (board pos))
           (apply conj
@@ -93,4 +97,5 @@
   (-> moves
       (avoid-walls board pos conf)
       (avoid-hazards board pos conf)
+      (beware-snake-heads board pos conf)
       (prefer-valuable-area board pos conf)))

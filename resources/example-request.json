@@ -2,7 +2,7 @@
   "game": {
     "id": "game-00fe20da-94ad-11ea-bb37",
     "ruleset": {
-      "name": "standard",
+      "name": null,
       "version": "v.1.2.3",
       "settings": {
         "foodSpawnChance": 25,
@@ -78,6 +78,26 @@
           "head":"silly",
           "tail":"curled"
         }
+      },
+      {
+          "id": "snake-b67f4906-94ae-11ea-bb37",
+          "name": "Another Snake",
+          "health": 16,
+          "body": [
+              {"x": 10, "y": 4},
+              {"x": 10, "y": 3},
+              {"x": 10, "y": 2}
+          ],
+          "latency": "222",
+          "head": {"x": 10, "y": 4},
+          "length": 4,
+          "shout": "I'm not really sure...",
+          "squad": "",
+          "customizations":{
+              "color":"#26CF04",
+              "head":"silly",
+              "tail":"curled"
+          }
       }
     ]
   },

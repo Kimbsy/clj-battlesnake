@@ -6,7 +6,7 @@
 (comment
   ;; full destructuring map for request object
   {{:keys [id ruleset map source timeout] :as game} :game
-   {:keys [height width food hazards snakes] :as board} :board
+   {:keys [height width food hazards snakes] :as game-board} :board
    {:keys [shout body health id name length head customizations latency squad] :as you} :you
    :keys [turn] :as req})
 
@@ -15,6 +15,15 @@
 (s/def ::response
   (s/keys :req-un [::status
                    ::body]))
+
+(defn wrapped?
+  [{:keys [ruleset]}]
+  (= "wrapped" (:name ruleset)))
+
+(defn wrap-pos
+  [[x y] {:keys [width height] :as foo}]
+  [(mod x width)
+   (mod y height)])
 
 (defn cardinal-adjacent-positions
   [[x y]]
@@ -41,7 +50,7 @@
   "Creates a canonical data structure representing the board specified
   in the request."
   [{{:keys [id ruleset source timeout] game-map :map :as game} :game
-    {:keys [height width food hazards snakes] :as board} :board
+    {:keys [height width food hazards snakes] :as game-board} :board
     {:keys [shout body health id length head customizations latency squad] you-name :name :as you} :you
     :keys [turn] :as req}]
   (let [;; initial board
@@ -49,6 +58,12 @@
                     (for [x (range width)
                           y (range height)]
                       [[x y] :_]))
+
+        ;; add food
+        board (reduce (fn [acc {:keys [x y]}]
+                        (assoc acc [x y] :f))
+                      board
+                      food)
 
         ;; add hazards
         board (reduce (fn [acc {:keys [x y]}]
@@ -65,11 +80,22 @@
                       board
                       snakes)
 
-        ;; add food
-        board (reduce (fn [acc {:keys [x y]}]
-                        (assoc acc [x y] :f))
+        ;; mark enemy snake heads
+        board (reduce (fn [acc {{:keys [x y] :as s-head} :head}]
+                        (if (not= head s-head)
+                          (reduce (fn [accc pos]
+                                    (let [pos (if (wrapped? game)
+                                                (wrap-pos pos game-board)
+                                                pos)]
+                                      (update accc pos (fn [existing]
+                                                         (if (#{:_ :f} existing)
+                                                           :h
+                                                           existing)))))
+                                  acc
+                                  (vals (cardinal-adjacent-positions [x y])))
+                          acc))
                       board
-                      food)]
+                      snakes)]
 
     {:board board
      :pos [(:x head) (:y head)]
@@ -89,7 +115,7 @@
   (->> m
        sort
        (map second)
-       (partition 5)
+       (partition 11)
        (apply mapv vector)
        reverse
        vec))
